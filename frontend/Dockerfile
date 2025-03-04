@@ -1,18 +1,6 @@
-# Use the official Node.js image
-FROM node:14
-
-# Set the working directory
-WORKDIR /usr/src/app
-
-# Copy package.json and install dependencies
-COPY package*.json ./
+FROM node:19.5.0-alpine
+RUN mkdir /frontend
+WORKDIR /frontend
+COPY package.json /frontend/package.json
 RUN npm install
-
-# Copy the rest of the application code
-COPY . .
-
-# Expose the application port
-EXPOSE 3000
-
-# Command to run the application
-CMD ["npm", "start"]
+RUN npm install axios

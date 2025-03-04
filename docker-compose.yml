@@ -1,20 +1,29 @@
-version: '3.8'
+version: '3.0'
 
 services:
-  service-a:
-    build:
-      context: ./service-a
+  api:
+    build: backend
+    command: ["flask", "run", "--host=0.0.0.0", "--debug"]
+    volumes:
+      - ./backend:/backend
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
     ports:
-      - "3000:3000"
+      - "5000:5000"
 
-  service-b:
-    build:
-      context: ./service-b
+  client:
+    build: frontend
+    command: ["npm", "run", "dev", "--", "--host"]
+    volumes:
+      - ./frontend:/frontend
+      - node-modules:/frontend/node_modules
+    environment:
+      - NODE_ENV=development
     ports:
-      - "3001:3000"
+      - '5173:5173'
+    depends_on:
+      - api
 
-  service-c:
-    build:
-      context: ./service-c
-    ports:
-      - "3002:3000"
+volumes:
+  node-modules:
