@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { ThemeProvider, useTheme, styled } from '@mui/material/styles';
+import { ThemeProvider } from '@mui/material/styles';
 import {
   CssBaseline,
   AppBar,
@@ -21,24 +21,14 @@ import Dashboard from "./pages/Review/Dashboard";
 import ChatHistory from "./pages/ChatHistory/ChatHistory";
 import PerformanceMetrics from "./pages/PerformanceMetrics/PerformanceMetrics";
 import CustomMetric from "./pages/CustomMetric/CustomMetric";
+import HallucinationMetric from "./pages/CustomMetric/HallucinationMetric";
+import AdditionalAnalytics from "./pages/CustomMetric/AdditionalAnalytics"; // Подключаем новый файл
 import theme from "./theme";
-
-const BackgroundWrapper = styled(Box)({
-  position: 'fixed',
-  zIndex: -1,
-  width: '100%',
-  height: '100%',
-  top: 0,
-  left: 0,
-  background: 'radial-gradient(ellipse at bottom, #1A237E 0%, #000000 80%)',
-  overflow: 'hidden'
-});
 
 const App: React.FC = () => {
   const [elevated, setElevated] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const muiTheme = useTheme();
-  const isMobile = useMediaQuery(muiTheme.breakpoints.down("sm"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     const handleScroll = () => {
@@ -62,12 +52,6 @@ const App: React.FC = () => {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <BackgroundWrapper
-        component={motion.div}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1 }}
-      />
       <Router>
         <AppBar
           position="fixed"
@@ -88,72 +72,45 @@ const App: React.FC = () => {
                 <MenuIcon />
               </IconButton>
             )}
-            <Typography
-              variant="h6"
-              sx={{
-                flexGrow: 1,
-                fontFamily: 'Poppins, sans-serif',
-                textShadow: '0 2px 4px rgba(0,0,0,0.5)'
-              }}
-            >
+            <Typography variant="h6" sx={{ flexGrow: 1 }}>
               Дашборд качества модели
             </Typography>
             {!isMobile && (
               <>
-                <Button color="inherit" component={Link} to="/">
-                  Обзор
-                </Button>
-                <Button color="inherit" component={Link} to="/chat-history">
-                  Чаты
-                </Button>
-                <Button color="inherit" component={Link} to="/performance">
-                  Производительность
-                </Button>
-                <Button color="inherit" component={Link} to="/custom-metric">
-                  Доп. метрика
-                </Button>
+                <Button color="inherit" component={Link} to="/">Обзор</Button>
+                <Button color="inherit" component={Link} to="/chat-history">Чаты</Button>
+                <Button color="inherit" component={Link} to="/performance">Производительность</Button>
+                <Button color="inherit" component={Link} to="/custom-metric">Доп. метрика</Button>
+                <Button color="inherit" component={Link} to="/hallucination-metric">Галлюцинации</Button>
+                <Button color="inherit" component={Link} to="/additional-analytics">Аналитика</Button> {/* Новый маршрут */}
               </>
             )}
           </Toolbar>
         </AppBar>
         <Drawer anchor="left" open={drawerOpen} onClose={toggleDrawer(false)}>
-          <Box
-            sx={{ mt: 8, p: 2, width: "100%", maxWidth: "none" }}
-            role="presentation"
-            onClick={toggleDrawer(false)}
-            onKeyDown={toggleDrawer(false)}
-          >
+          <Box sx={{ mt: 8, p: 2, width: "100%" }} role="presentation" onClick={toggleDrawer(false)}>
             <List>
-              <ListItem button component={Link} to="/">
-                <ListItemText primary="Обзор" />
-              </ListItem>
-              <ListItem button component={Link} to="/chat-history">
-                <ListItemText primary="Чаты" />
-              </ListItem>
-              <ListItem button component={Link} to="/performance">
-                <ListItemText primary="Производительность" />
-              </ListItem>
-              <ListItem button component={Link} to="/custom-metric">
-                <ListItemText primary="Доп. метрика" />
-              </ListItem>
+              <ListItem button component={Link} to="/"><ListItemText primary="Обзор" /></ListItem>
+              <ListItem button component={Link} to="/chat-history"><ListItemText primary="Чаты" /></ListItem>
+              <ListItem button component={Link} to="/performance"><ListItemText primary="Производительность" /></ListItem>
+              <ListItem button component={Link} to="/custom-metric"><ListItemText primary="Доп. метрика" /></ListItem>
+              <ListItem button component={Link} to="/hallucination-metric"><ListItemText primary="Галлюцинации" /></ListItem>
+              <ListItem button component={Link} to="/additional-analytics"><ListItemText primary="Аналитика" /></ListItem> {/* Новый пункт */}
             </List>
           </Box>
         </Drawer>
-        <Box sx={{ mt: 8, p: 2, width: "100%", maxWidth: "none" }}>
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7 }}
-          >
+        <Box sx={{ mt: 8, p: 2, width: "100%" }}>
+          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/chat-history" element={<ChatHistory />} />
               <Route path="/performance" element={<PerformanceMetrics />} />
               <Route path="/custom-metric" element={<CustomMetric />} />
+              <Route path="/hallucination-metric" element={<HallucinationMetric />} />
+              <Route path="/additional-analytics" element={<AdditionalAnalytics />} /> {/* Новый маршрут */}
             </Routes>
           </motion.div>
         </Box>
-
       </Router>
     </ThemeProvider>
   );
