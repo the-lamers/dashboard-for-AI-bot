@@ -6,7 +6,8 @@ import {
   TextField,
   Grid,
   Paper,
-  Container
+  Container,
+  Box
 } from "@mui/material";
 import { fetchMetrics } from "../../api/metricsAPI";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
@@ -38,7 +39,17 @@ const ChatHistory: React.FC = () => {
   );
 
   return (
-    <Container maxWidth={false} sx={{ p: 2 }}>
+    <Box
+  sx={{
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: "100vh", // Занимает всю высоту экрана
+    width: "100%", // Растягиваем на всю ширину
+  }}
+>
+    {/* <Container maxWidth={false} disableGutters sx={{ p: 2,width: "100%",
+      maxWidth: "1200px", margin: "0 auto" }}> */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -109,7 +120,8 @@ const ChatHistory: React.FC = () => {
           </Grid>
         </Grid>
       </motion.div>
-    </Container>
+    {/* </Container> */}
+    </Box>
   );
 };
 
