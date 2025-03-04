@@ -6,151 +6,75 @@ import re
 import ast
 from typing import List, Dict, Any
 
+LOG_FILE = "val_set.json"
+STATS_FILE = "stats.json"
+
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-cache = {}
+def load_logs():
+    if not os.path.exists(LOG_FILE):
+        return []
+    with open(LOG_FILE, "r", encoding="utf-8") as file:
+        return json.load(file)
 
-def parse_all_data(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    return _parse_data(data, include_time=False)
+def load_stats():
+    if not os.path.exists(STATS_FILE):
+        return {"total_logs": 0, "categories": {}, "avg_response_time": 0, "user_filters": {}, "question_filters": {}}
+    with open(STATS_FILE, "r", encoding="utf-8") as file:
+        return json.load(file)
 
-def parse_data_with_time(data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    return _parse_data(data, include_time=True)
+def update_stats(new_logs):
+    stats = load_stats()
+    total_old_logs = stats["total_logs"]
 
-def _parse_data(data: List[Dict[str, Any]], include_time: bool) -> List[Dict[str, Any]]:
-    result = []
-    for item in data:
-        parsed = {
-            'selected_role': item['Выбранная роль'],
-            'campus': item['Кампус'],
-            'education_level': item['Уровень образования'],
-            'question_category': item['Категория вопроса'],
-            'user_question': _clean_text(item['Вопрос пользователя']),
-            'user_filters': item['user_filters'],
-            'question_filters': item['question_filters'],
-            'saiga_answer': _clean_text(item['Saiga']),
-            'giga_answer': _clean_text(item['Giga']),
-            'winner': item['Кто лучше?'],
-            'comment': item['Комментарий'],
-            'contexts': _parse_contexts(item['Ресурсы для ответа'])
-        }
+    for log in new_logs[total_old_logs:]:
+        stats["total_logs"] += 1
 
-        if item.get('Уточненный вопрос пользователя'):
-            parsed.update({
-                'refined_question': _clean_text(item['Уточненный вопрос пользователя']),
-                'refined_answer': _clean_text(item['Ответ AI (уточнение)']),
-                'refined_contexts': _parse_contexts(item['Ресурсы для ответа (уточнение)'] or '')
-            })
+        # Count category occurrences
+        category = log.get("Категория вопроса", "Unknown")
+        stats["categories"][category] = stats["categories"].get(category, 0) + 1
 
-        if include_time:
-            parsed.update({
-                'response_time': item['Время ответа модели (сек)'],
-                'refined_response_time': item.get('Время ответа модели на уточненный вопрос (сек)')
-            })
-        
-        result.append(parsed)
-    
-    return result
+        # Compute average response time
+        response_time = log.get("Время ответа модели (сек)", 0)
+        stats["avg_response_time"] = ((stats["avg_response_time"] * total_old_logs) + response_time) / stats["total_logs"]
 
-def _parse_contexts(resources: str) -> List[Dict[str, Any]]:
-    contexts = []
-    pattern = re.compile(r"Document\(page_content='(.*?)', metadata=({.*?})\)", re.DOTALL)
-    
-    for match in re.finditer(pattern, resources):
-        content, metadata_str = match.groups()
-        try:
-            metadata = ast.literal_eval(metadata_str)
-            tags = _extract_tags(metadata)
-            
-            contexts.append({
-                'text': _clean_text(content),
-                'metadata': {
-                    'source': metadata.get('source'),
-                    'file_name': metadata.get('file_name'),
-                    'url': metadata.get('url')
-                },
-                'tags': tags
-            })
-        except Exception as e:
-            print(f"Контекст не распарсился: {e}")
-    
-    return contexts
+        # Count user filters
+        for filter_item in log.get("user_filters", []):
+            stats["user_filters"][filter_item] = stats["user_filters"].get(filter_item, 0) + 1
 
-def _extract_tags(metadata: Dict) -> Dict[str, List[str]]:
-    return {
-        'topic_tags': [v for k,v in metadata.items() if k.startswith('topic_tag_') and v],
-        'user_tags': [v for k,v in metadata.items() if k.startswith('user_tag_') and v]
-    }
+        # Count question filters
+        for filter_item in log.get("question_filters", []):
+            stats["question_filters"][filter_item] = stats["question_filters"].get(filter_item, 0) + 1
 
-def _clean_text(text: str) -> str:
-    if not text: return ''
-    return re.sub(r'\\[nrt]|[\n\r\t]+|\s+', ' ', text).strip()
+    # Save updated stats
+    with open(STATS_FILE, "w", encoding="utf-8") as file:
+        json.dump(stats, file, indent=4, ensure_ascii=False)
 
-# dummy_metrics = {
-#     "campuses": {
-#         "Москва": 120,
-#         "Нижний Новгород": 80,
-#         "Санкт-Петербург": 95,
-#         "Пермь": 60
-#     },
-#     "educationLevels": {
-#         "бакалавриат": 200,
-#         "магистратура": 150,
-#         "специалитет": 90,
-#         "аспирантура": 40
-#     },
-#     "questionCategories": {
-#         "Деньги": 50,
-#         "Учебный процесс": 100,
-#         "Практическая подготовка": 70
-#     },
-#     "chatHistory": {
-#         "repeatedQuestions": [
-#             {"question": "Когда пересдача?", "count": 25},
-#             {"question": "Как записаться на экзамен?", "count": 15}
-#         ]
-#     },
-#     "performance": {
-#         "averageResponseTime": 3.29,
-#         "emptyChatHistoryFrequency": 70,
-#         "nonEmptyChatHistoryFrequency": 30
-#     },
-#     "customMetric": {
-#         "customMetricValue": 0.65
-#     },
-#     "hallucinationMetric": {
-#         "currentValue": 0.15,  # Например, 15% некорректных ответов
-#         "history": [
-#             {"date": "2025-03-01", "value": 0.10},
-#             {"date": "2025-03-05", "value": 0.12},
-#             {"date": "2025-03-10", "value": 0.15},
-#             {"date": "2025-03-15", "value": 0.14},
-#             {"date": "2025-03-20", "value": 0.15}
-#         ],
-#         "details": [
-#             {"parameter": "Сравнение с эталоном", "value": 0.2, "comment": "Низкое совпадение с эталоном"},
-#             {"parameter": "Логическая связность", "value": 0.1, "comment": "Найдено несколько противоречий"},
-#             {"parameter": "Эвристика ключевых слов", "value": 0.15, "comment": "Наличие подозрительных фраз"}
-#         ]
-#     }
-# }
+    return stats
 
-@app.route('/api/upload', methods=['POST'])
-def upload_file():
-    try:
-        file = request.files['file']
-        data = json.load(file)
-        parsed_data = parse_data_with_time(data)  # Parse the uploaded JSON
-        cache[file.filename] = parsed_data  # Cache the parsed data
-        return jsonify({"message": "File received and parsed", "data": parsed_data}), 200
-    except Exception as e:
-        return jsonify({"error": str(e)}), 400
+@app.route("/update_stats", methods=["GET"])
+def update_statistics():
+    """Endpoint to update statistics based on the latest logs."""
+    logs = load_logs()
+    stats = update_stats(logs)
+    return jsonify(stats)
 
-@app.route('/api/metrics', methods=['GET'])
-def get_cache():
-    return jsonify(cache)
+@app.route("/get_stats", methods=["GET"])
+def get_statistics():
+    """Endpoint to retrieve current statistics."""
+    stats = load_stats()
+    return jsonify(stats)
 
-if __name__ == '__main__':
+@app.route("/reset_stats", methods=["GET"])
+def reset_statistics():
+    """Reset the statistics file."""
+    stats = {"total_logs": 0, "categories": {}, "avg_response_time": 0, "user_filters": {}, "question_filters": {}}
+    with open(STATS_FILE, "w", encoding="utf-8") as file:
+        json.dump(stats, file, indent=4, ensure_ascii=False)
+    return jsonify({"message": "Statistics reset successfully."})
+
+if __name__ == "__main__":
     app.run(debug=True)
 
 
