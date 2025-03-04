@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Typography, Box, Container, Grid, Paper } from "@mui/material";
+import { Typography, Box, Container, Grid } from "@mui/material";
 import { motion } from "framer-motion";
 import { fetchMetrics } from "../../api/metricsAPI";
 import UnifiedBarChart from "../../components/UnifiedBarChart";
@@ -12,7 +12,8 @@ const MetricsDashboard: React.FC = () => {
 
   useEffect(() => {
     fetchMetrics().then((res) => {
-      setMetrics(res.metrics);
+      // Изменено: теперь данные приходят напрямую, без вложенного поля metrics
+      setMetrics(res);
     });
   }, []);
 
@@ -47,7 +48,6 @@ const MetricsDashboard: React.FC = () => {
       <Container maxWidth="lg">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <Grid container spacing={4}>
-            
             {/* Графики */}
             <Grid item xs={12} md={6}>
               <UnifiedBarChart
