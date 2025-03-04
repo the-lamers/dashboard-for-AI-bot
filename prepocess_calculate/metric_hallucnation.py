@@ -1,150 +1,59 @@
-import requests
-from typing import Dict, List
-
-import re
+import torch
 import numpy as np
+from transformers import BertTokenizer, BertModel
+from sklearn.metrics.pairwise import cosine_similarity
 
-def get_response(text: str, context: str) -> Dict:
-    api_url = "https://api.yandex.net/v1/gpt"  # Замените на актуальный URL
-    api_key = "YOUR_API_KEY"  # Замените на ваш API-ключ
+class ConceptualCoherenceScore:
+    def __init__(self):
+        self.tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+        self.model = BertModel.from_pretrained('bert-base-cased')
+        self.model.eval()
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model.to(self.device)
 
-    headers = {
-        "Authorization": f"Bearer {api_key}",
-        "Content-Type": "application/json"
-    }
+    def _encode_text(self, text):
+        inputs = self.tokenizer(text, padding=True, truncation=True, return_tensors="pt")
+        with torch.no_grad():
+            outputs = self.model(**{k: v.to(self.device) for k, v in inputs.items()})
+            embeddings = outputs.last_hidden_state[:, 0, :].cpu().numpy()
+        return embeddings
 
-    # Формируем промпт для оценки галлюцинаций
-    prompt = f"""
-    Ты - эксперт по проверке достоверности ответов языковых моделей.
+    def calculate_score(self, model_output, ground_truth, context):
+        # 1. Вычисление языкового соответствия (как в BertScore)
+        model_embeddings = self._encode_text(model_output)
+        gt_embeddings = self._encode_text(ground_truth)
+        language_score = cosine_similarity(model_embeddings, gt_embeddings)[0][0]
 
-    Запрос: {text}
-    Исходный контекст: {context}
-    Ответ модели: {text}
+        # 2. Вычисление концептуальной согласованности
+        context_embeddings = self._encode_text(context)
+        concept_score = cosine_similarity(model_embeddings, context_embeddings)[0][0]
 
-    Оцени достоверность ответа по следующим критериям:
-    1. Соответствие исходному контексту
-    2. Наличие фактических ошибок
-    3. Логическая связность
+        # 3. Весовые коэффициенты
+        w_language = 0.6  # больший вес для языкового соответствия
+        w_concept = 0.4   # меньший вес для концептуальной согласованности
 
-    Верни ответ в формате JSON:
-    {{
-        "hallucination_score": float (от 0 до 1),
-        "explanation": str,
-        "verdict": "достоверный" или "галлюцинация"
-    }}
-    """
+        # 4. Итоговая метрика
+        final_score = (w_language * language_score) + (w_concept * concept_score)
 
-    data = {
-        "text": prompt
-    }
-
-    response = requests.post(api_url, headers=headers, json=data)
-    return response.json()
-
-def evaluate_hallucinations(text: str, context: str) -> Dict:
-    """
-    Оценивает вероятность галлюцинации в ответе LLM модели
-
-    :param text: ответ модели
-    :param context: исходный контекст запроса
-    :return: словарь с оценкой и объяснением
-    """
-    try:
-        response = get_response(text, context)
-        result = {
-            "hallucination_score": response["hallucination_score"],
-            "explanation": response["explanation"],
-            "verdict": response["verdict"]
-        }
-        return result
-    except KeyError:
         return {
-            "error": "Не удалось получить оценку от модели"
+            "final_score": final_score,
+            "language_score": language_score,
+            "concept_score": concept_score
         }
 
 # Пример использования
-query = "Кто президент США?"
-context = "Джо Байден стал президентом США в 2021 году."
-response_text = "Барак Обама является текущим президентом США."
+if __name__ == "__main__":
+    evaluator = ConceptualCoherenceScore()
 
-result = evaluate_hallucinations(response_text, context)
-print(result)
+    model_output = "ВШЭ - это крупнейший университет России, основанный в 1990 году"
+    ground_truth = "ВШЭ - это национальный исследовательский университет, основанный в 1992 году"
+    context = [
+        "НИУ ВШЭ был основан в 1992 году",
+        "Высшая школа экономики является одним из ведущих университетов России",
+        "В 1992 году была создана Высшая школа экономики"
+    ]
 
-
-# Another solution
-/*Эта метрика позволяет не только выявлять галлюцинации,
-но и давать рекомендации по улучшению ответа, что делает её полезной как для конечных
-пользователей, так и для разработчиков систем на базе LLM.*/
-
-def extract_scores(shadow_response):
-    # Регулярные выражения для извлечения оценок
-    context_score = re.search(r'Соответствие контексту:\s*([0-9\.]+)', shadow_response)
-    fact_score = re.search(r'Фактическая достоверность:\s*([0-9\.]+)', shadow_response)
-    logic_score = re.search(r'Логическая связность:\s*([0-9\.]+)', shadow_response)
-    style_score = re.search(r'Стилистическая адекватность:\s*([0-9\.]+)', shadow_response)
-
-    # Проверка наличия всех оценок
-    if not all([context_score, fact_score, logic_score, style_score]):
-        raise ValueError("Не все оценки найдены в теневом ответе")
-
-    # Преобразование в числа
-    scores = {
-        'C': float(context_score.group(1)),
-        'F': float(fact_score.group(1)),
-        'L': float(logic_score.group(1)),
-        'S': float(style_score.group(1))
-    }
-
-    return scores
-
-def calculate_HALO_score(scores):
-    # Веса для каждого параметра
-    weights = {
-        'C': 0.4,
-        'F': 0.3,
-        'L': 0.2,
-        'S': 0.1
-    }
-
-    # Расчет взвешенной суммы
-    HALO_score = np.sum([scores[param] * weights[param] for param in scores])
-
-    return HALO_score
-
-def halo_check(original_response, context):
-    # Генерация теневого ответа (здесь используется заглушка)
-    shadow_response = f"""
-    Анализ ответа:
-    Соответствие контексту: 0.8
-    Фактическая достоверность: 0.7
-    Логическая связность: 0.9
-    Стилистическая адекватность: 0.85
-    """
-
-    # Извлечение оценок
-    scores = extract_scores(shadow_response)
-
-    # Расчет итогового HALO_score
-    HALO_score = calculate_HALO_score(scores)
-
-    # Форматированный вывод
-    result = {
-        "HALO_score": HALO_score,
-        "Детали оценок": scores,
-        "Статус": "ОК" if HALO_score >= 0.6 else "Требует перепроверки",
-        "Действие": "Разрешить" if HALO_score >= 0.6 else "Заблокировать"
-    }
-
-    return result
-
-def halo_check(original_response, context):
-    shadow_response = llm(f"Проанализируй ответ: '{original_response}'\nКонтекст: {context}\nОцени по параметрам: соответствие контексту, фактическая достоверность, логическая связность, стилистическая адекватность")
-
-    # Извлечение оценок из shadow_response
-    # Расчет HALO_score
-    # Возврат результата
-
-    return HALO_score
-
-result = halo_check("Это тестовый ответ", "Это тестовый контекст")
-print(result)
+    result = evaluator.calculate_score(model_output, ground_truth, context)
+    print(f"Итоговая метрика: {result['final_score']}")
+    print(f"Языковое соответствие: {result['language_score']}")
+    print(f"Концептуальная согласованность: {result['concept_score']}")
