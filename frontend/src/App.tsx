@@ -99,18 +99,19 @@ const App: React.FC = () => {
             </List>
           </Box>
         </Drawer>
-        <Box sx={{ mt: 8, p: 2, width: "100%" }}>
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/chat-history" element={<ChatHistory />} />
-              <Route path="/performance" element={<PerformanceMetrics />} />
-              <Route path="/custom-metric" element={<CustomMetric />} />
-              <Route path="/hallucination-metric" element={<HallucinationMetric />} />
-              <Route path="/additional-analytics" element={<AdditionalAnalytics />} /> {/* Новый маршрут */}
-            </Routes>
-          </motion.div>
-        </Box>
+        <Box sx={{ mt: 8, p: 0, width: "100vw", height: "100vh", display: "flex", flexDirection: "column" }}>
+  <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }} style={{ flex: 1, width: "100%" }}>
+    <Routes>
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/chat-history" element={<ChatHistory />} />
+      <Route path="/performance" element={<PerformanceMetrics />} />
+      <Route path="/custom-metric" element={<CustomMetric />} />
+      <Route path="/hallucination-metric" element={<HallucinationMetric />} />
+      <Route path="/additional-analytics" element={<AdditionalAnalytics />} />
+    </Routes>
+  </motion.div>
+</Box>
+
       </Router>
     </ThemeProvider>
   );

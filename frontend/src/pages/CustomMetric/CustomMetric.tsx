@@ -30,7 +30,7 @@ const CustomMetricPage: React.FC = () => {
   }, []);
 
   return (
-    <Box sx={{ width: "100%", minHeight: "100vh", p: 3, boxSizing: "border-box" }}>
+    <Box sx={{  width: "100%", minHeight: "100vh", p: 3, boxSizing: "border-box" }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
         <Grid container spacing={3} justifyContent="center">
           <Grid item xs={12}>
