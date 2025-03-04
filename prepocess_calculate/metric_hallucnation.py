@@ -1,6 +1,9 @@
 import requests
 from typing import Dict, List
 
+import re
+import numpy as np
+
 def get_response(text: str, context: str) -> Dict:
     api_url = "https://api.yandex.net/v1/gpt"  # Замените на актуальный URL
     api_key = "YOUR_API_KEY"  # Замените на ваш API-ключ
@@ -65,4 +68,83 @@ context = "Джо Байден стал президентом США в 2021 г
 response_text = "Барак Обама является текущим президентом США."
 
 result = evaluate_hallucinations(response_text, context)
+print(result)
+
+
+# Another solution
+/*Эта метрика позволяет не только выявлять галлюцинации,
+но и давать рекомендации по улучшению ответа, что делает её полезной как для конечных
+пользователей, так и для разработчиков систем на базе LLM.*/
+
+def extract_scores(shadow_response):
+    # Регулярные выражения для извлечения оценок
+    context_score = re.search(r'Соответствие контексту:\s*([0-9\.]+)', shadow_response)
+    fact_score = re.search(r'Фактическая достоверность:\s*([0-9\.]+)', shadow_response)
+    logic_score = re.search(r'Логическая связность:\s*([0-9\.]+)', shadow_response)
+    style_score = re.search(r'Стилистическая адекватность:\s*([0-9\.]+)', shadow_response)
+
+    # Проверка наличия всех оценок
+    if not all([context_score, fact_score, logic_score, style_score]):
+        raise ValueError("Не все оценки найдены в теневом ответе")
+
+    # Преобразование в числа
+    scores = {
+        'C': float(context_score.group(1)),
+        'F': float(fact_score.group(1)),
+        'L': float(logic_score.group(1)),
+        'S': float(style_score.group(1))
+    }
+
+    return scores
+
+def calculate_HALO_score(scores):
+    # Веса для каждого параметра
+    weights = {
+        'C': 0.4,
+        'F': 0.3,
+        'L': 0.2,
+        'S': 0.1
+    }
+
+    # Расчет взвешенной суммы
+    HALO_score = np.sum([scores[param] * weights[param] for param in scores])
+
+    return HALO_score
+
+def halo_check(original_response, context):
+    # Генерация теневого ответа (здесь используется заглушка)
+    shadow_response = f"""
+    Анализ ответа:
+    Соответствие контексту: 0.8
+    Фактическая достоверность: 0.7
+    Логическая связность: 0.9
+    Стилистическая адекватность: 0.85
+    """
+
+    # Извлечение оценок
+    scores = extract_scores(shadow_response)
+
+    # Расчет итогового HALO_score
+    HALO_score = calculate_HALO_score(scores)
+
+    # Форматированный вывод
+    result = {
+        "HALO_score": HALO_score,
+        "Детали оценок": scores,
+        "Статус": "ОК" if HALO_score >= 0.6 else "Требует перепроверки",
+        "Действие": "Разрешить" if HALO_score >= 0.6 else "Заблокировать"
+    }
+
+    return result
+
+def halo_check(original_response, context):
+    shadow_response = llm(f"Проанализируй ответ: '{original_response}'\nКонтекст: {context}\nОцени по параметрам: соответствие контексту, фактическая достоверность, логическая связность, стилистическая адекватность")
+
+    # Извлечение оценок из shadow_response
+    # Расчет HALO_score
+    # Возврат результата
+
+    return HALO_score
+
+result = halo_check("Это тестовый ответ", "Это тестовый контекст")
 print(result)
