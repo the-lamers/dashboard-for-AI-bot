@@ -1,22 +1,16 @@
 import { useEffect, useState } from "react";
-import {
-  Box,
-  Grid,
-  Typography,
-} from "@mui/material";
-import { DistributionChart } from "./components/DistributionChart";
+import { Box, Grid, Typography } from "@mui/material";
+import UnifiedBarChart from "../../components/UnifiedBarChart";
 import { ErrorFrequencyLineChart } from "./components/ErrorFrequencyLineChart";
 import { FilterControls } from "./components/FilterControls";
 import { HallucinationAnalysis } from "./components/HallucinationAnalysis";
 import { SatisfactionPieChart } from "./components/SatisfactionPieChart";
-
 import axios from "axios";
 
-
 const AdditionalAnalytics = () => {
-  const [metrics, setMetrics] = useState(null);
-  const [satisfactionData, setSatisfactionData] = useState([]);
-  const [errorFrequencyData, setErrorFrequencyData] = useState([]);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [satisfactionData, setSatisfactionData] = useState<any[]>([]);
+  const [errorFrequencyData, setErrorFrequencyData] = useState<any[]>([]);
   const [selectedCampus, setSelectedCampus] = useState("all");
   const [selectedEducation, setSelectedEducation] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -27,14 +21,14 @@ const AdditionalAnalytics = () => {
       setSatisfactionData([
         { name: "Очень удовлетворён", value: 70 },
         { name: "Удовлетворён", value: 20 },
-        { name: "Не удовлетворён", value: 10 }
+        { name: "Не удовлетворён", value: 10 },
       ]);
       setErrorFrequencyData([
         { date: "2025-03-01", errors: 5 },
         { date: "2025-03-05", errors: 7 },
         { date: "2025-03-10", errors: 6 },
         { date: "2025-03-15", errors: 8 },
-        { date: "2025-03-20", errors: 5 }
+        { date: "2025-03-20", errors: 5 },
       ]);
     });
   }, []);
@@ -43,15 +37,15 @@ const AdditionalAnalytics = () => {
 
   const campusesDataRaw = Object.keys(metrics.campuses).map((key) => ({
     name: key,
-    value: metrics.campuses[key]
+    value: metrics.campuses[key],
   }));
   const educationDataRaw = Object.keys(metrics.educationLevels).map((key) => ({
     name: key,
-    value: metrics.educationLevels[key]
+    value: metrics.educationLevels[key],
   }));
   const questionCategoriesDataRaw = Object.keys(metrics.questionCategories).map((key) => ({
     name: key,
-    value: metrics.questionCategories[key]
+    value: metrics.questionCategories[key],
   }));
 
   const campusesData =
@@ -84,15 +78,34 @@ const AdditionalAnalytics = () => {
         setSelectedCategory={setSelectedCategory}
       />
       <Grid container spacing={3}>
-        <Grid item xs={12} md={4}>
-          <DistributionChart title="Распределение по кампусам" data={campusesData} fillColor="#00E676" />
+        <Grid item xs={12} md={4} sx={{ display: "flex" }}>
+          <UnifiedBarChart
+            title="Распределение по кампусам"
+            data={campusesData}
+            fillColor="#00E676"
+            dataKey="value"
+            interactive={true}
+          />
         </Grid>
-        <Grid item xs={12} md={4}>
-          <DistributionChart title="Распределение по уровням образования" data={educationData} fillColor="#2979FF" />
+        <Grid item xs={12} md={4} sx={{ display: "flex" }}>
+          <UnifiedBarChart
+            title="Распределение по уровням образования"
+            data={educationData}
+            fillColor="#2979FF"
+            dataKey="value"
+            interactive={true}
+          />
         </Grid>
-        <Grid item xs={12} md={4}>
-          <DistributionChart title="Распределение по категориям вопросов" data={questionCategoriesData} fillColor="#FF5252" />
+        <Grid item xs={12} md={4} sx={{ display: "flex" }}>
+          <UnifiedBarChart
+            title="Распределение по категориям вопросов"
+            data={questionCategoriesData}
+            fillColor="#FF5252"
+            dataKey="value"
+            interactive={true}
+          />
         </Grid>
+
         <Grid item xs={12} md={6}>
           <SatisfactionPieChart data={satisfactionData} />
         </Grid>

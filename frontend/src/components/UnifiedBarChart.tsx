@@ -1,22 +1,18 @@
-import { useState } from "react";
+import React, { useState } from "react";
+import { Card, CardContent, Typography, Box } from "@mui/material";
 import {
-  Card,
-  CardContent,
-  Typography,
-  Box,
-} from "@mui/material";
-import {
+  ResponsiveContainer,
   BarChart,
-  Bar,
+  CartesianGrid,
   XAxis,
   YAxis,
   Tooltip,
-  ResponsiveContainer,
+  Bar,
   Cell,
 } from "recharts";
 
 // Функция для осветления цвета
-const lightenColor = (color, percent) => {
+const lightenColor = (color: string, percent: number) => {
   const num = parseInt(color.replace("#", ""), 16);
   const r = (num >> 16) + Math.round((255 - (num >> 16)) * percent);
   const g = ((num >> 8) & 0x00ff) + Math.round((255 - ((num >> 8) & 0x00ff)) * percent);
@@ -24,8 +20,24 @@ const lightenColor = (color, percent) => {
   return `#${(1 << 24 | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
 };
 
-export const DistributionChart = ({ title, data, fillColor }) => {
-  const [activeIndex, setActiveIndex] = useState(null);
+interface UnifiedBarChartProps {
+  title: string;
+  data: Array<any>;
+  fillColor: string;
+  dataKey: string;
+  interactive?: boolean;
+  showGrid?: boolean;
+}
+
+const UnifiedBarChart: React.FC<UnifiedBarChartProps> = ({
+  title,
+  data,
+  fillColor,
+  dataKey,
+  interactive = false,
+  showGrid = false,
+}) => {
+  const [activeIndex, setActiveIndex] = useState<number | null>(null);
 
   return (
     <Card sx={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
@@ -37,25 +49,23 @@ export const DistributionChart = ({ title, data, fillColor }) => {
         <Box sx={{ height: 250 }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data}>
+              {showGrid && <CartesianGrid strokeDasharray="3 3" />}
               <XAxis dataKey="name" stroke="#E0E0E0" />
               <YAxis stroke="#E0E0E0" />
               <Tooltip cursor={{ fill: "rgba(255, 255, 255, 0.2)" }} />
-              <Bar
-                dataKey="value"
-                onMouseLeave={() => setActiveIndex(null)}
-              >
+              <Bar dataKey={dataKey} onMouseLeave={() => setActiveIndex(null)}>
                 {data.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={
-                      activeIndex === index
-                        ? lightenColor(fillColor, 0.3) // осветляем на 30%
+                      interactive && activeIndex === index
+                        ? lightenColor(fillColor, 0.3)
                         : fillColor
                     }
-                    onMouseEnter={() => setActiveIndex(index)}
+                    onMouseEnter={interactive ? () => setActiveIndex(index) : undefined}
                     style={{
-                      cursor: "pointer",
-                      transition: "fill 0.3s ease-in-out",
+                      cursor: interactive ? "pointer" : "default",
+                      transition: interactive ? "fill 0.3s ease-in-out" : undefined,
                     }}
                   />
                 ))}
@@ -67,3 +77,5 @@ export const DistributionChart = ({ title, data, fillColor }) => {
     </Card>
   );
 };
+
+export default UnifiedBarChart;

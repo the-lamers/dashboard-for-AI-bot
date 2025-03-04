@@ -24,6 +24,7 @@ import CustomMetric from "./pages/CustomMetric/CustomMetric";
 import HallucinationMetric from "./pages/HallucinationMetric/HallucinationMetric";
 import AdditionalAnalytics from "./pages/AdditionalAnalytics/AdditionalAnalytics";
 import theme from "./theme";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 const App: React.FC = () => {
   const [elevated, setElevated] = useState(false);
@@ -153,20 +154,22 @@ const App: React.FC = () => {
             transition={{ duration: 0.7 }}
             style={{ flex: 1, width: "100%" }}
           >
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/chat-history" element={<ChatHistory />} />
-              <Route path="/performance" element={<PerformanceMetrics />} />
-              <Route path="/custom-metric" element={<CustomMetric />} />
-              <Route
-                path="/hallucination-metric"
-                element={<HallucinationMetric />}
-              />
-              <Route
-                path="/additional-analytics"
-                element={<AdditionalAnalytics />}
-              />
-            </Routes>
+            <ErrorBoundary>
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/chat-history" element={<ChatHistory />} />
+                <Route path="/performance" element={<PerformanceMetrics />} />
+                <Route path="/custom-metric" element={<CustomMetric />} />
+                <Route
+                  path="/hallucination-metric"
+                  element={<HallucinationMetric />}
+                />
+                <Route
+                  path="/additional-analytics"
+                  element={<AdditionalAnalytics />}
+                />
+              </Routes>
+            </ErrorBoundary>
           </motion.div>
         </Box>
       </Router>

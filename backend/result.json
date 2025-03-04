@@ -26,18 +26,6 @@
         "emptyChatHistoryFrequency": 83.76,
         "nonEmptyChatHistoryFrequency": 16.24
     },
-    "chatHistory": {
-        "repeatedQuestions": [
-            {
-                "question": "Когда пересдача?",
-                "count": 25
-            },
-            {
-                "question": "Как записаться на экзамен?",
-                "count": 15
-            }
-        ]
-    },
     "customMetric": {
         "customMetricValue": 0.65
     },
@@ -80,6 +68,18 @@
                 "parameter": "Эвристика ключевых слов",
                 "value": 0.15,
                 "comment": "Наличие подозрительных фраз"
+            }
+        ]
+    },
+    "chatHistory": {
+        "repeatedQuestions": [
+            {
+                "question": "Когда пересдача?",
+                "count": 25
+            },
+            {
+                "question": "Как записаться на экзамен?",
+                "count": 15
             }
         ]
     }
