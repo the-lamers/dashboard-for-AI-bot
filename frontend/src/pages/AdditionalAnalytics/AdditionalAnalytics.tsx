@@ -1,17 +1,16 @@
 import { useEffect, useState } from "react";
 import { Box, Grid, Typography } from "@mui/material";
-import { DistributionChart } from "./components/DistributionChart";
+import UnifiedBarChart from "../../components/UnifiedBarChart";
 import { ErrorFrequencyLineChart } from "./components/ErrorFrequencyLineChart";
 import { FilterControls } from "./components/FilterControls";
 import { HallucinationAnalysis } from "./components/HallucinationAnalysis";
 import { SatisfactionPieChart } from "./components/SatisfactionPieChart";
-
 import axios from "axios";
 
 const AdditionalAnalytics = () => {
-  const [metrics, setMetrics] = useState(null);
-  const [satisfactionData, setSatisfactionData] = useState([]);
-  const [errorFrequencyData, setErrorFrequencyData] = useState([]);
+  const [metrics, setMetrics] = useState<any>(null);
+  const [satisfactionData, setSatisfactionData] = useState<any[]>([]);
+  const [errorFrequencyData, setErrorFrequencyData] = useState<any[]>([]);
   const [selectedCampus, setSelectedCampus] = useState("all");
   const [selectedEducation, setSelectedEducation] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -44,12 +43,10 @@ const AdditionalAnalytics = () => {
     name: key,
     value: metrics.educationLevels[key],
   }));
-  const questionCategoriesDataRaw = Object.keys(metrics.questionCategories).map(
-    (key) => ({
-      name: key,
-      value: metrics.questionCategories[key],
-    })
-  );
+  const questionCategoriesDataRaw = Object.keys(metrics.questionCategories).map((key) => ({
+    name: key,
+    value: metrics.questionCategories[key],
+  }));
 
   const campusesData =
     selectedCampus === "all"
@@ -62,9 +59,7 @@ const AdditionalAnalytics = () => {
   const questionCategoriesData =
     selectedCategory === "all"
       ? questionCategoriesDataRaw
-      : questionCategoriesDataRaw.filter(
-          (item) => item.name === selectedCategory
-        );
+      : questionCategoriesDataRaw.filter((item) => item.name === selectedCategory);
 
   return (
     <Box sx={{ width: "100%", p: 3 }}>
@@ -84,24 +79,30 @@ const AdditionalAnalytics = () => {
       />
       <Grid container spacing={3}>
         <Grid item xs={12} md={4} sx={{ display: "flex" }}>
-          <DistributionChart
+          <UnifiedBarChart
             title="Распределение по кампусам"
             data={campusesData}
             fillColor="#00E676"
+            dataKey="value"
+            interactive={true}
           />
         </Grid>
         <Grid item xs={12} md={4} sx={{ display: "flex" }}>
-          <DistributionChart
+          <UnifiedBarChart
             title="Распределение по уровням образования"
             data={educationData}
             fillColor="#2979FF"
+            dataKey="value"
+            interactive={true}
           />
         </Grid>
         <Grid item xs={12} md={4} sx={{ display: "flex" }}>
-          <DistributionChart
+          <UnifiedBarChart
             title="Распределение по категориям вопросов"
             data={questionCategoriesData}
             fillColor="#FF5252"
+            dataKey="value"
+            interactive={true}
           />
         </Grid>
 
