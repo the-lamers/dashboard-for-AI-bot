@@ -73,7 +73,7 @@ def get_metrics_json():
     clusters = {}
 
     model_id = "sentence-transformers/all-MiniLM-L6-v2"
-    hf_token = ""
+    hf_token = "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"
 
     api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_id}"
     headers = {"Authorization": f"Bearer {hf_token}"}
