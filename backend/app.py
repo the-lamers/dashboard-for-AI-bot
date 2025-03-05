@@ -15,7 +15,6 @@ from collections import defaultdict
 app = Flask(__name__)
 CORS(app)
 
-<<<<<<< HEAD
 def filter_data(campus, education_level, category_question, parsed_data):
     """Фильтрует данные по переданным параметрам"""
     return [
@@ -51,7 +50,6 @@ def get_metrics_json():
     non_empty_chat_history_count = 0
     questions = []
 
-    # Подсчет
     for entry in filtered_data:
         campuses[entry['campus']] += 1
         education_levels[entry['education_level'].lower()] += 1
@@ -60,8 +58,7 @@ def get_metrics_json():
         questions.append(entry['user_question'])
         total_response_time += entry['response_time']
 
-        # Подсчет пустых и непустых историй чата (примерная логика)
-        if entry.get('comment') is None:  # Пример проверки пустой истории
+        if entry.get('comment') is None:
             empty_chat_history_count += 1
         else:
             non_empty_chat_history_count += 1
@@ -72,27 +69,36 @@ def get_metrics_json():
     empty_chat_history_frequency = (empty_chat_history_count / total_chat_histories) * 100
     non_empty_chat_history_frequency = (non_empty_chat_history_count / total_chat_histories) * 100
 
-    repeatedQuestions = []
-    clusters = {}
+    if os.path.exists("repeated_questions.json"):
+        with open("repeated_questions.json", "r", encoding="utf-8") as file:
+            repeatedQuestions_res = json.load(file)
+    else:
+        repeatedQuestions = []
+        clusters = {}
 
-    model_id = "sentence-transformers/all-MiniLM-L6-v2"
-    hf_token = "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"
+        model_id = "sentence-transformers/all-MiniLM-L6-v2"
+        hf_token = "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"
 
-    api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_id}"
-    headers = {"Authorization": f"Bearer {hf_token}"}
+        api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_id}"
+        headers = {"Authorization": f"Bearer {hf_token}"}
 
-    embeddings = query(questions, api_url, headers)
+        embeddings = query(questions, api_url, headers)
 
-    clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.15, metric='cosine', linkage='average')
-    labels = clustering.fit_predict(embeddings)
-    for i, label in enumerate(labels):
-        clusters.setdefault(label, []).append(questions[i])
+        clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.15, metric='cosine', linkage='average')
+        labels = clustering.fit_predict(embeddings)
+        for i, label in enumerate(labels):
+            clusters.setdefault(label, []).append(questions[i])
 
-    for cluster_id, cluster_questions in clusters.items():
-        repeatedQuestions.append({"question": cluster_questions[0], "count": len(cluster_questions)})
+        for cluster_id, cluster_questions in clusters.items():
+            repeatedQuestions.append({"question": cluster_questions[0], "count": len(cluster_questions)})
 
-    repeatedQuestions = sorted(repeatedQuestions, key=lambda x: x["count"], reverse=True)  
-    repeatedQuestions = repeatedQuestions[:10]
+        repeatedQuestions = sorted(repeatedQuestions, key=lambda x: x["count"], reverse=True)  
+        repeatedQuestions = repeatedQuestions[:10]
+
+        with open("repeated_questions.json", "w", encoding="utf-8") as file:
+            repeatedQuestions_res = {"repeatedQuestions":repeatedQuestions}
+            json.dump(repeatedQuestions_res, file, indent=4, ensure_ascii=False)
+
 
     output_json = {
         "campuses": dict(campuses),
@@ -121,60 +127,16 @@ def get_metrics_json():
                 {"parameter": "Эвристика ключевых слов", "value": 0.15, "comment": "Наличие подозрительных фраз"}
             ]
         },
-        "chatHistory": {
-            "repeatedQuestions": repeatedQuestions
-        }
+        "chatHistory": repeatedQuestions_res
     }
 
     with open('result.json', 'w', encoding='utf-8') as f:
         json.dump(output_json, f, ensure_ascii=False, indent=4)
-
-
-def calculate_file_hash(file_path):
-    """Вычисляет хэш-сумму файла."""
-    hasher = hashlib.sha256()
-    with open(file_path, 'rb') as f:
-        buf = f.read()
-        hasher.update(buf)
-    return hasher.hexdigest()
-
-def save_hash_to_file(hash_value, hash_file_path):
-    """Сохраняет хэш-сумму в файл."""
-    with open(hash_file_path, 'w') as f:
-        f.write(hash_value)
-
-def load_hash_from_file(hash_file_path):
-    """Загружает хэш-сумму из файла."""
-    if os.path.exists(hash_file_path):
-        with open(hash_file_path, 'r') as f:
-            return f.read().strip()
-    return None
-
-def is_json_file_modified(json_file_path, hash_file_path):
-    """Проверяет, был ли изменен JSON файл."""
-    current_hash = calculate_file_hash(json_file_path)
-    saved_hash = load_hash_from_file(hash_file_path)
-
-    if saved_hash is None:
-        print("Хэш-сумма не найдена. Создаем новую.")
-        save_hash_to_file(current_hash, hash_file_path)
-        return False
-
-    if current_hash == saved_hash:
-        print("Файл не был изменен.")
-        return False
-    else:
-        print("Файл был изменен.")
-        save_hash_to_file(current_hash, hash_file_path)
-        return True
+    return output_json
 
 @app.route("/api/metrics", methods=["GET"])
 def get_metrics():
-    # if is_json_file_modified("result.json", "data_hash.txt"):
-    #     output_json = get_metrics_json()
-    # else:
-    with open("result.json", 'r', encoding='utf-8') as file:
-        output_json = json.load(file)
+    output_json = get_metrics_json()
     return jsonify(output_json)
 
 if __name__ == "__main__":
