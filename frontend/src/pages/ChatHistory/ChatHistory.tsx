@@ -1,116 +1,89 @@
 import React, { useEffect, useState } from "react";
-import {
-  Card,
-  CardContent,
-  Typography,
-  TextField,
-  Grid,
-  Paper,
-  Container
-} from "@mui/material";
-import { fetchMetrics } from "../../api/metricsAPI";
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
+import { Typography, Box, Container, Grid } from "@mui/material";
 import { motion } from "framer-motion";
+import { fetchMetrics } from "../../api/metricsAPI";
+import UnifiedBarChart from "../../components/UnifiedBarChart";
+import QuestionCategories from "./components/QuestionCategories";
+import RepeatedQuestions from "./components/RepeatedQuestions";
 
-interface ChatItem {
-  question: string;
-  count: number;
-}
-
-interface ChatData {
-  repeatedQuestions: ChatItem[];
-}
-
-const COLORS = ["#00E676", "#7B1FA2", "#FF4081", "#2979FF", "#FFC107"];
-
-const ChatHistory: React.FC = () => {
-  const [chatData, setChatData] = useState<ChatData>({ repeatedQuestions: [] });
+const MetricsDashboard: React.FC = () => {
+  const [metrics, setMetrics] = useState<any>(null);
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     fetchMetrics().then((res) => {
-      setChatData(res.chatHistory);
+      // Изменено: теперь данные приходят напрямую, без вложенного поля metrics
+      setMetrics(res);
     });
   }, []);
 
-  const filteredQuestions = chatData.repeatedQuestions.filter(item =>
-    item.question.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  if (!metrics) return <Typography>Загрузка данных...</Typography>;
+
+  const campusesData = Object.entries(metrics.campuses).map(([campus, count]) => ({
+    name: campus,
+    count,
+  }));
+
+  const educationLevelsData = Object.entries(metrics.educationLevels).map(([level, count]) => ({
+    name: level,
+    count,
+  }));
+
+  const questionCategoriesData = Object.entries(metrics.questionCategories).map(([category, count]) => ({
+    category,
+    count,
+  }));
 
   return (
-    <Container maxWidth={false} sx={{ p: 2 }}>
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        style={{ width: "100%" }}
-      >
-        <Grid container spacing={2} sx={{ width: "100%" }}>
-          <Grid item xs={12}>
-            <Card sx={{ width: "100%", p: 2, mb: 2 }}>
-              <CardContent>
-                <Typography variant="h5" align="center" sx={{ mb: 2 }}>
-                  История чатов
-                </Typography>
-                <TextField
-                  label="Поиск по вопросам"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  fullWidth
-                  sx={{ mb: 3 }}
-                />
-                <Grid container spacing={2} sx={{ width: "100%" }}>
-                  <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, width: "100%" }}>
-                      <Typography variant="h6" align="center" sx={{ mb: 2 }}>
-                        Диаграмма повторений
-                      </Typography>
-                      <ResponsiveContainer width="100%" height={250}>
-                        <PieChart>
-                          <Pie
-                            data={filteredQuestions}
-                            dataKey="count"
-                            nameKey="question"
-                            cx="50%"
-                            cy="50%"
-                            outerRadius={80}
-                            label
-                          >
-                            {filteredQuestions.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Pie>
-                          <Tooltip contentStyle={{ backgroundColor: "#333", borderRadius: "8px", border: "none" }} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                    </Paper>
-                  </Grid>
-                  <Grid item xs={12} md={6}>
-                    <Paper sx={{ p: 2, maxHeight: 300, overflowY: "auto", width: "100%" }}>
-                      <Typography variant="h6" align="center" sx={{ mb: 2 }}>
-                        Таблица повторений
-                      </Typography>
-                      {filteredQuestions.length === 0 ? (
-                        <Typography align="center">Нет данных</Typography>
-                      ) : (
-                        filteredQuestions.map((item, index) => (
-                          <Paper key={index} sx={{ p: 1, mb: 1, background: "rgba(255,255,255,0.05)" }}>
-                            <Typography>
-                              <strong>{item.question}</strong>: {item.count}
-                            </Typography>
-                          </Paper>
-                        ))
-                      )}
-                    </Paper>
-                  </Grid>
-                </Grid>
-              </CardContent>
-            </Card>
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "100vh",
+        width: "100%",
+        p: 2,
+      }}
+    >
+      <Container maxWidth="lg">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <Grid container spacing={4}>
+            {/* Графики */}
+            <Grid item xs={12} md={6}>
+              <UnifiedBarChart
+                title="Кампусы"
+                data={campusesData}
+                fillColor="#2979FF"
+                dataKey="count"
+                interactive={false}
+                showGrid={true}
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <UnifiedBarChart
+                title="Уровни образования"
+                data={educationLevelsData}
+                fillColor="#FFC107"
+                dataKey="count"
+                interactive={false}
+                showGrid={true}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <QuestionCategories questionCategoriesData={questionCategoriesData} />
+            </Grid>
+            <Grid item xs={12}>
+              <RepeatedQuestions
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                repeatedQuestions={metrics.chatHistory.repeatedQuestions}
+              />
+            </Grid>
           </Grid>
-        </Grid>
-      </motion.div>
-    </Container>
+        </motion.div>
+      </Container>
+    </Box>
   );
 };
 
-export default ChatHistory;
+export default MetricsDashboard;

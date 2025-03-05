@@ -1,78 +1,150 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify, request
 from flask_cors import CORS
 import json
 import os
-import re
-import ast
-from typing import List, Dict, Any
+from func_to_call import parse_all_data, parse_data_with_time
+from collections import defaultdict
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics.pairwise import cosine_similarity
+import pandas as pd
+import requests
+from func_to_call import parse_all_data, parse_data_with_time
+from collections import defaultdict
 
-LOG_FILE = "val_set.json"
-STATS_FILE = "stats.json"
+
 
 app = Flask(__name__)
 CORS(app)
 
-def load_logs():
-    if not os.path.exists(LOG_FILE):
-        return []
-    with open(LOG_FILE, "r", encoding="utf-8") as file:
-        return json.load(file)
 
-def load_stats():
-    if not os.path.exists(STATS_FILE):
-        return {"total_logs": 0, "categories": {}, "avg_response_time": 0, "user_filters": {}, "question_filters": {}}
-    with open(STATS_FILE, "r", encoding="utf-8") as file:
-        return json.load(file)
+def filter_data(campus, education_level, category_question, parsed_data):
+    """Фильтрует данные по переданным параметрам"""
+    return [
+        entry for entry in parsed_data
+        if (not campus or entry.get("campus") == campus) and
+           (not education_level or entry.get("education_level") == education_level) and
+           (not category_question or entry.get("question_category") == category_question)
+    ]
 
-def update_stats(new_logs):
-    stats = load_stats()
-    total_old_logs = stats["total_logs"]
+def query(texts, api_url, headers):
+    response = requests.post(api_url, headers=headers, json={"inputs": texts, "options":{"wait_for_model":True}})
+    return response.json()
 
-    for log in new_logs[total_old_logs:]:
-        stats["total_logs"] += 1
+def get_metrics_json():
+    parsed_data = parse_data_with_time('train_set.json')
 
-        # Count category occurrences
-        category = log.get("Категория вопроса", "Unknown")
-        stats["categories"][category] = stats["categories"].get(category, 0) + 1
+    with open('parsed_dashboard_data.json', 'w', encoding='utf-8') as f:
+        json.dump(parsed_data, f, ensure_ascii=False, indent=4)
 
-        # Compute average response time
-        response_time = log.get("Время ответа модели (сек)", 0)
-        stats["avg_response_time"] = ((stats["avg_response_time"] * total_old_logs) + response_time) / stats["total_logs"]
 
-        # Count user filters
-        for filter_item in log.get("user_filters", []):
-            stats["user_filters"][filter_item] = stats["user_filters"].get(filter_item, 0) + 1
+    campus = request.args.get('campus', default=None, type=str)
+    education_level = request.args.get('education_level', default=None, type=str)
+    category_question = request.args.get('category_question', default=None, type=str)
 
-        # Count question filters
-        for filter_item in log.get("question_filters", []):
-            stats["question_filters"][filter_item] = stats["question_filters"].get(filter_item, 0) + 1
 
-    # Save updated stats
-    with open(STATS_FILE, "w", encoding="utf-8") as file:
-        json.dump(stats, file, indent=4, ensure_ascii=False)
+    filtered_data = filter_data(campus, education_level, category_question, parsed_data)
 
-    return stats
+    campuses = defaultdict(int)
+    education_levels = defaultdict(int)
+    question_categories = defaultdict(int)
+    total_response_time = 0
+    empty_chat_history_count = 0
+    non_empty_chat_history_count = 0
+    questions = []
 
-@app.route("/update_stats", methods=["GET"])
-def update_statistics():
-    """Endpoint to update statistics based on the latest logs."""
-    logs = load_logs()
-    stats = update_stats(logs)
-    return jsonify(stats)
+    for entry in filtered_data:
+        campuses[entry['campus']] += 1
+        education_levels[entry['education_level'].lower()] += 1
+        question_categories[entry['question_category']] += 1
 
-@app.route("/get_stats", methods=["GET"])
-def get_statistics():
-    """Endpoint to retrieve current statistics."""
-    stats = load_stats()
-    return jsonify(stats)
+        questions.append(entry['user_question'])
+        total_response_time += entry['response_time']
 
-@app.route("/reset_stats", methods=["GET"])
-def reset_statistics():
-    """Reset the statistics file."""
-    stats = {"total_logs": 0, "categories": {}, "avg_response_time": 0, "user_filters": {}, "question_filters": {}}
-    with open(STATS_FILE, "w", encoding="utf-8") as file:
-        json.dump(stats, file, indent=4, ensure_ascii=False)
-    return jsonify({"message": "Statistics reset successfully."})
+        if entry.get('comment') is None:
+            empty_chat_history_count += 1
+        else:
+            non_empty_chat_history_count += 1
+
+    if len(filtered_data) != 0:
+        average_response_time = total_response_time / len(filtered_data)
+        total_chat_histories = empty_chat_history_count + non_empty_chat_history_count
+        empty_chat_history_frequency = (empty_chat_history_count / total_chat_histories) * 100
+        non_empty_chat_history_frequency = (non_empty_chat_history_count / total_chat_histories) * 100
+    else:
+        average_response_time = 0
+        total_chat_histories = 0
+        empty_chat_history_frequency = 0
+        non_empty_chat_history_frequency = 0
+
+    if os.path.exists("repeated_questions.json"):
+        with open("repeated_questions.json", "r", encoding="utf-8") as file:
+            repeatedQuestions_res = json.load(file)
+    else:
+        repeatedQuestions = []
+        clusters = {}
+
+        model_id = "sentence-transformers/all-MiniLM-L6-v2"
+        hf_token = "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"
+
+        api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_id}"
+        headers = {"Authorization": f"Bearer {hf_token}"}
+
+        embeddings = query(questions, api_url, headers)
+
+        clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.15, metric='cosine', linkage='average')
+        labels = clustering.fit_predict(embeddings)
+        for i, label in enumerate(labels):
+            clusters.setdefault(label, []).append(questions[i])
+
+        for cluster_id, cluster_questions in clusters.items():
+            repeatedQuestions.append({"question": cluster_questions[0], "count": len(cluster_questions)})
+
+        repeatedQuestions = sorted(repeatedQuestions, key=lambda x: x["count"], reverse=True)  
+        repeatedQuestions = repeatedQuestions[:10]
+
+        with open("repeated_questions.json", "w", encoding="utf-8") as file:
+            repeatedQuestions_res = {"repeatedQuestions":repeatedQuestions}
+            json.dump(repeatedQuestions_res, file, indent=4, ensure_ascii=False)
+
+
+    output_json = {
+        "campuses": dict(campuses),
+        "educationLevels": dict(education_levels),
+        "questionCategories": dict(question_categories),
+        "performance": {
+            "averageResponseTime": round(average_response_time, 2),  # Округление до 2 знаков
+            "emptyChatHistoryFrequency": round(empty_chat_history_frequency, 2),
+            "nonEmptyChatHistoryFrequency": round(non_empty_chat_history_frequency, 2)
+        },
+        "customMetric": {
+            "customMetricValue": 0.65
+        },
+        "hallucinationMetric": {
+            "currentValue": 0.15,
+            "history": [
+                {"date": "2025-03-01", "value": 0.10},
+                {"date": "2025-03-05", "value": 0.12},
+                {"date": "2025-03-10", "value": 0.15},
+                {"date": "2025-03-15", "value": 0.14},
+                {"date": "2025-03-20", "value": 0.15}
+            ],
+            "details": [
+                {"parameter": "Сравнение с эталоном", "value": 0.2, "comment": "Низкое совпадение с эталоном"},
+                {"parameter": "Логическая связность", "value": 0.1, "comment": "Найдено несколько противоречий"},
+                {"parameter": "Эвристика ключевых слов", "value": 0.15, "comment": "Наличие подозрительных фраз"}
+            ]
+        },
+        "chatHistory": repeatedQuestions_res
+    }
+
+    with open('result.json', 'w', encoding='utf-8') as f:
+        json.dump(output_json, f, ensure_ascii=False, indent=4)
+    return output_json
+
+@app.route("/api/metrics", methods=["GET"])
+def get_metrics():
+    output_json = get_metrics_json()
+    return jsonify(output_json)
 
 if __name__ == "__main__":
     app.run(debug=True)

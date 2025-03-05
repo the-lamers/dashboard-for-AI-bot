@@ -1,59 +1,57 @@
 import React from "react";
+import { Box, Typography } from "@mui/material";
 
 interface BarChartProps {
   data: number[];
   labels: string[];
+  maxBarHeight?: number;
 }
 
-const BarChart: React.FC<BarChartProps> = ({ data, labels }) => {
-  const maxValue = Math.max(...data, 1);
-
+const BarChart: React.FC<BarChartProps> = ({
+  data,
+  labels,
+}) => {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "flex-end",
-        justifyContent: "center",
-        height: "80px",
-        gap: "6px",
-        padding: "4px 8px",
-      }}
-    >
-      {data.map((value, index) => (
-        <div
-          key={index}
-          style={{
-            flex: 1,
-            textAlign: "center",
-            position: "relative",
-          }}
-        >
-          {/* Столбик */}
-          <div
-            style={{
-              height: `${(value / maxValue) * 100}%`,
-              background: "linear-gradient(180deg, #9C27B0 0%, #7B1FA2 100%)",
-              borderRadius: "4px",
-              transition: "height 0.3s ease, transform 0.2s ease",
-              cursor: "pointer",
-            }}
-            onMouseOver={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
-            onMouseOut={(e) => (e.currentTarget.style.transform = "scale(1)")}
-          />
-          {/* Подпись */}
-          <div
-            style={{
-              fontSize: "0.75rem",
-              marginTop: "6px",
-              color: "#ccc",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {labels[index]}
-          </div>
-        </div>
-      ))}
-    </div>
+      <p>
+        {data.map(( value, index ) => {
+          return (
+            <Box
+              key={index}
+              display="inline-block"
+              flexDirection="column"
+              alignItems="center"
+              width="auto"
+              flex="none"
+              sx={{
+                transition: "transform 0.2s ease, box-shadow 0.2s ease",
+                background: "rgba(255,255,255,0.1)",
+                backdropFilter: "blur(5px)",
+                borderRadius: 2,
+                mx: 0.4,
+                "&:hover": {
+                  transform: "scale(1.05)",
+                },
+              }}
+            >
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "#fff",
+                  display: "block",
+                  margin: "5px",
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  cursor: "hover",
+                }}
+                title={labels[index]}
+              >
+                {labels[index]}
+              </Typography>
+            </Box>
+          );
+        })}
+      </p>
   );
 };
 
