@@ -39,7 +39,7 @@ const PerformanceMetrics: React.FC = () => {
             <CardContent>
               <Typography variant="h5" align="center" sx={{ mb: 2 }}>Общая производительность</Typography>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
+                <Grid item xs={12} md={12}>
                   <Tooltip title="Среднее время обработки вопроса моделью">
                     <Paper sx={{ p: 2, textAlign: "center" }}>
                       <Typography variant="subtitle1">Среднее время ответа</Typography>
@@ -47,7 +47,7 @@ const PerformanceMetrics: React.FC = () => {
                     </Paper>
                   </Tooltip>
                 </Grid>
-                <Grid item xs={12} md={4}>
+                {/* <Grid item xs={12} md={4}>
                   <Tooltip title="Пустой chat_history означает, что пользователь не задал уточняющий вопрос">
                     <Paper sx={{ p: 2, textAlign: "center" }}>
                       <Typography variant="subtitle1">Пустой chat_history</Typography>
@@ -62,7 +62,7 @@ const PerformanceMetrics: React.FC = () => {
                       <Typography variant="h6">{perfData.nonEmptyChatHistoryFrequency}%</Typography>
                     </Paper>
                   </Tooltip>
-                </Grid>
+                </Grid> */}
               </Grid>
             </CardContent>
           </Card>
