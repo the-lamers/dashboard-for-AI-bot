@@ -1,30 +1,18 @@
 {
     "campuses": {
-        "Нижний Новгород": 543,
-        "Москва": 123,
-        "Пермь": 27,
-        "Санкт-Петербург": 3
+        "Нижний Новгород": 46,
+        "Пермь": 1
     },
     "educationLevels": {
-        "бакалавриат": 690,
-        "магистратура": 5,
-        "специалитет": 1
+        "бакалавриат": 47
     },
     "questionCategories": {
-        "Наука": 91,
-        "Социальные вопросы": 77,
-        "Военка": 105,
-        "Финансовые вопросы": 89,
-        "Цифровые сервисы и Техподдержка": 37,
-        "Учеба": 150,
-        "Другое": 59,
-        "Внеучебка": 47,
-        "Обратная связь (в т.ч СОП)": 41
+        "Внеучебка": 47
     },
     "performance": {
-        "averageResponseTime": 4.23,
-        "emptyChatHistoryFrequency": 83.76,
-        "nonEmptyChatHistoryFrequency": 16.24
+        "averageResponseTime": 2.5,
+        "emptyChatHistoryFrequency": 72.34,
+        "nonEmptyChatHistoryFrequency": 27.66
     },
     "customMetric": {
         "customMetricValue": 0.65

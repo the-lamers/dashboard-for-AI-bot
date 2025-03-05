@@ -63,11 +63,16 @@ def get_metrics_json():
         else:
             non_empty_chat_history_count += 1
 
-    average_response_time = total_response_time / len(filtered_data)
-
-    total_chat_histories = empty_chat_history_count + non_empty_chat_history_count
-    empty_chat_history_frequency = (empty_chat_history_count / total_chat_histories) * 100
-    non_empty_chat_history_frequency = (non_empty_chat_history_count / total_chat_histories) * 100
+    if len(filtered_data) != 0:
+        average_response_time = total_response_time / len(filtered_data)
+        total_chat_histories = empty_chat_history_count + non_empty_chat_history_count
+        empty_chat_history_frequency = (empty_chat_history_count / total_chat_histories) * 100
+        non_empty_chat_history_frequency = (non_empty_chat_history_count / total_chat_histories) * 100
+    else:
+        average_response_time = 0
+        total_chat_histories = 0
+        empty_chat_history_frequency = 0
+        non_empty_chat_history_frequency = 0
 
     if os.path.exists("repeated_questions.json"):
         with open("repeated_questions.json", "r", encoding="utf-8") as file:
