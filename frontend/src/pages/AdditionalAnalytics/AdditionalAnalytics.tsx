@@ -18,17 +18,14 @@ const AdditionalAnalytics = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Формируем объект с параметрами фильтров
+        // Формируем объект с параметрами, как ожидает сервер
         const params = {};
         if (selectedCampus !== "all") params.campus = selectedCampus;
-        if (selectedEducation !== "all") params.education = selectedEducation;
-        if (selectedCategory !== "all") params.category = selectedCategory;
+        if (selectedEducation !== "all") params.education_level = selectedEducation;
+        if (selectedCategory !== "all") params.category_question = selectedCategory;
 
-        // Отправляем GET-запрос с параметрами
-        const res = await axios.get("http://localhost:5000/api/metrics", { params });
-
-        // Сохраняем весь объект данных в стейт
-        setData(res.data);
+        const response = await axios.get("http://localhost:5000/api/metrics", { params });
+        setData(response.data);
       } catch (error) {
         console.error("Ошибка при загрузке данных:", error);
       }
@@ -41,36 +38,23 @@ const AdditionalAnalytics = () => {
     return <Typography>Загрузка...</Typography>;
   }
 
-  // Если на бэкенде для кампусов/уровней/категорий возвращается объект, преобразуем его в массив
-  const campusesDataRaw = data.campuses
-    ? Object.keys(data.campuses).map((key) => ({
-        name: key,
-        value: data.campuses[key],
-      }))
+  // Преобразуем объекты в массивы, если они существуют
+  const campusesData = data.campuses
+    ? Object.keys(data.campuses).map((key) => ({ name: key, value: data.campuses[key] }))
+    : [];
+  const educationData = data.educationLevels
+    ? Object.keys(data.educationLevels).map((key) => ({ name: key, value: data.educationLevels[key] }))
+    : [];
+  const questionCategoriesData = data.questionCategories
+    ? Object.keys(data.questionCategories).map((key) => ({ name: key, value: data.questionCategories[key] }))
     : [];
 
-  const educationDataRaw = data.educationLevels
-    ? Object.keys(data.educationLevels).map((key) => ({
-        name: key,
-        value: data.educationLevels[key],
-      }))
-    : [];
-
-  const questionCategoriesDataRaw = data.questionCategories
-    ? Object.keys(data.questionCategories).map((key) => ({
-        name: key,
-        value: data.questionCategories[key],
-      }))
-    : [];
-
-  // Список данных для диаграммы удовлетворённости (если сервер не вернул, берём дефолтные)
+  // Остальные данные
   const satisfactionData = data.satisfactionData || [
     { name: "Очень удовлетворён", value: 70 },
     { name: "Удовлетворён", value: 20 },
     { name: "Не удовлетворён", value: 10 },
   ];
-
-  // Список данных для частоты ошибок (если сервер не вернул, берём дефолтные)
   const errorFrequencyData = data.errorFrequencyData || [
     { date: "2025-03-01", errors: 5 },
     { date: "2025-03-05", errors: 7 },
@@ -79,22 +63,6 @@ const AdditionalAnalytics = () => {
     { date: "2025-03-20", errors: 5 },
   ];
 
-  // Фильтруем (filter) данные только если выбран конкретный кампус/уровень/категория
-  const campusesData =
-    selectedCampus === "all"
-      ? campusesDataRaw
-      : campusesDataRaw.filter((item) => item.name === selectedCampus);
-
-  const educationData =
-    selectedEducation === "all"
-      ? educationDataRaw
-      : educationDataRaw.filter((item) => item.name === selectedEducation);
-
-  const questionCategoriesData =
-    selectedCategory === "all"
-      ? questionCategoriesDataRaw
-      : questionCategoriesDataRaw.filter((item) => item.name === selectedCategory);
-
   return (
     <Box sx={{ width: "100%", p: 3 }}>
       <Typography variant="h4" align="center" sx={{ mb: 3 }}>
@@ -102,9 +70,9 @@ const AdditionalAnalytics = () => {
       </Typography>
 
       <FilterControls
-        campusesDataRaw={campusesDataRaw}
-        educationDataRaw={educationDataRaw}
-        questionCategoriesDataRaw={questionCategoriesDataRaw}
+        campusesDataRaw={campusesData}
+        educationDataRaw={educationData}
+        questionCategoriesDataRaw={questionCategoriesData}
         selectedCampus={selectedCampus}
         setSelectedCampus={setSelectedCampus}
         selectedEducation={selectedEducation}
@@ -114,7 +82,6 @@ const AdditionalAnalytics = () => {
       />
 
       <Grid container spacing={3}>
-        {/* Распределение по кампусам */}
         <Grid item xs={12} md={4} sx={{ display: "flex" }}>
           <UnifiedBarChart
             title="Распределение по кампусам"
@@ -124,8 +91,6 @@ const AdditionalAnalytics = () => {
             interactive
           />
         </Grid>
-
-        {/* Распределение по уровням образования */}
         <Grid item xs={12} md={4} sx={{ display: "flex" }}>
           <UnifiedBarChart
             title="Распределение по уровням образования"
@@ -135,8 +100,6 @@ const AdditionalAnalytics = () => {
             interactive
           />
         </Grid>
-
-        {/* Распределение по категориям вопросов */}
         <Grid item xs={12} md={4} sx={{ display: "flex" }}>
           <UnifiedBarChart
             title="Распределение по категориям вопросов"
@@ -147,17 +110,12 @@ const AdditionalAnalytics = () => {
           />
         </Grid>
 
-        {/* Пирог (pie) удовлетворённости */}
         <Grid item xs={12} md={6}>
           <SatisfactionPieChart data={satisfactionData} />
         </Grid>
-
-        {/* Линия (line) частоты ошибок */}
         <Grid item xs={12} md={6}>
           <ErrorFrequencyLineChart data={errorFrequencyData} />
         </Grid>
-
-        {/* Анализ галлюцинаций */}
         <Grid item xs={12}>
           <HallucinationAnalysis metrics={data} />
         </Grid>
