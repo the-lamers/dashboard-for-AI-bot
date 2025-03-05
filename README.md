@@ -13,7 +13,7 @@ Welcome to the **AI Chatbot Dashboard**! This project is a fun and interactive d
 ### Steps to Install
 1. Clone the repository:
    ```bash
-   git clone -b develop https://github.com/the-lamers/dashboard-for-AI-bot/.git
+   git clone https://github.com/the-lamers/dashboard-for-AI-bot/.git
    ```
 2. Navigate to the project directory:
    ```bash
