@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Card, CardContent, Typography, Box } from "@mui/material";
 import {
   ResponsiveContainer,
@@ -11,18 +11,20 @@ import {
   Cell,
 } from "recharts";
 
-// Функция для осветления цвета
 const lightenColor = (color: string, percent: number) => {
   const num = parseInt(color.replace("#", ""), 16);
   const r = (num >> 16) + Math.round((255 - (num >> 16)) * percent);
-  const g = ((num >> 8) & 0x00ff) + Math.round((255 - ((num >> 8) & 0x00ff)) * percent);
+  const g =
+    ((num >> 8) & 0x00ff) + Math.round((255 - ((num >> 8) & 0x00ff)) * percent);
   const b = (num & 0x0000ff) + Math.round((255 - (num & 0x0000ff)) * percent);
-  return `#${(1 << 24 | (r << 16) | (g << 8) | b).toString(16).slice(1)}`;
+  return `#${(1 << 24 | (r << 16) | (g << 8) | b)
+    .toString(16)
+    .slice(1)}`;
 };
 
 interface UnifiedBarChartProps {
   title: string;
-  data: Array<any>;
+  data: Array<{ name: string; [key: string]: any }>;
   fillColor: string;
   dataKey: string;
   interactive?: boolean;
@@ -38,6 +40,17 @@ const UnifiedBarChart: React.FC<UnifiedBarChartProps> = ({
   showGrid = false,
 }) => {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const [showLabels, setShowLabels] = useState(true);
+  const chartContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!chartContainerRef.current) return;
+    const containerWidth = chartContainerRef.current.offsetWidth;
+    const totalLabelWidth = data.reduce((acc, item) => {
+      return acc + (item.name?.length || 0) * 8 + 20;
+    }, 0);
+    setShowLabels(totalLabelWidth < containerWidth);
+  }, [data]);
 
   return (
     <Card sx={{ display: "flex", flexDirection: "column", height: "100%", width: "100%" }}>
@@ -46,11 +59,11 @@ const UnifiedBarChart: React.FC<UnifiedBarChartProps> = ({
           {title}
         </Typography>
         <Box sx={{ flexGrow: 1 }} />
-        <Box sx={{ height: 250 }}>
+        <Box sx={{ height: 250 }} ref={chartContainerRef}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={data}>
               {showGrid && <CartesianGrid strokeDasharray="3 3" />}
-              <XAxis dataKey="name" stroke="#E0E0E0" />
+              <XAxis dataKey="name" stroke="#E0E0E0" tick={showLabels ? undefined : false} />
               <YAxis stroke="#E0E0E0" />
               <Tooltip cursor={{ fill: "rgba(255, 255, 255, 0.2)" }} />
               <Bar dataKey={dataKey} onMouseLeave={() => setActiveIndex(null)}>
