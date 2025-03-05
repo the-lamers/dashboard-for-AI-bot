@@ -4,6 +4,11 @@ import json
 import os
 from func_to_call import parse_all_data, parse_data_with_time
 from collections import defaultdict
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics.pairwise import cosine_similarity
+import pandas as pd
+import requests
+
 
 app = Flask(__name__)
 CORS(app)
@@ -21,6 +26,7 @@ question_categories = defaultdict(int)
 total_response_time = 0
 empty_chat_history_count = 0
 non_empty_chat_history_count = 0
+questions = []
 
 # Подсчет
 for entry in data_v2:
@@ -29,6 +35,7 @@ for entry in data_v2:
     education_levels[entry['education_level'].lower()] += 1
     question_categories[entry['question_category']] += 1
 
+    questions.append(entry['user_question'])
     # Суммирование времени ответа
     total_response_time += entry['response_time']
 
@@ -45,6 +52,32 @@ average_response_time = total_response_time / len(data_v2)
 total_chat_histories = empty_chat_history_count + non_empty_chat_history_count
 empty_chat_history_frequency = (empty_chat_history_count / total_chat_histories) * 100
 non_empty_chat_history_frequency = (non_empty_chat_history_count / total_chat_histories) * 100
+
+repeatedQuestions = []
+clusters = {}
+
+model_id = "sentence-transformers/all-MiniLM-L6-v2"
+hf_token = "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"
+
+api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_id}"
+headers = {"Authorization": f"Bearer {hf_token}"}
+
+def query(texts):
+    response = requests.post(api_url, headers=headers, json={"inputs": questions, "options":{"wait_for_model":True}})
+    return response.json()
+
+embeddings = query(questions)
+
+clustering = AgglomerativeClustering(n_clusters=None, distance_threshold=0.15, metric='cosine', linkage='average')
+labels = clustering.fit_predict(embeddings)
+for i, label in enumerate(labels):
+    clusters.setdefault(label, []).append(questions[i])
+
+for cluster_id, cluster_questions in clusters.items():
+    repeatedQuestions.append({"question": cluster_questions[0], "count": len(cluster_questions)})
+
+repeatedQuestions = sorted(repeatedQuestions, key=lambda x: x["count"], reverse=True)  
+repeatedQuestions = repeatedQuestions[:10]
 
 # Формирование итогового JSON
 output_json = {
@@ -74,11 +107,8 @@ output_json = {
             {"parameter": "Эвристика ключевых слов", "value": 0.15, "comment": "Наличие подозрительных фраз"}
         ]
     },
-        "chatHistory": {
-        "repeatedQuestions": [
-            {"question": "Когда пересдача?", "count": 25},
-            {"question": "Как записаться на экзамен?", "count": 15}
-        ]
+    "chatHistory": {
+        "repeatedQuestions": repeatedQuestions
     }
 }
 
