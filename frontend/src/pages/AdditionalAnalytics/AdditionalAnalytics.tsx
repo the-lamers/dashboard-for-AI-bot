@@ -1,75 +1,78 @@
 import { useEffect, useState } from "react";
 import { Box, Grid, Typography } from "@mui/material";
-import UnifiedBarChart from "../../components/UnifiedBarChart";
-import { ErrorFrequencyLineChart } from "./components/ErrorFrequencyLineChart";
-import { FilterControls } from "./components/FilterControls";
-import { HallucinationAnalysis } from "./components/HallucinationAnalysis";
-import { SatisfactionPieChart } from "./components/SatisfactionPieChart";
 import axios from "axios";
 
+import UnifiedBarChart from "../../components/UnifiedBarChart";
+import { FilterControls } from "./components/FilterControls";
+import { SatisfactionPieChart } from "./components/SatisfactionPieChart";
+import { ErrorFrequencyLineChart } from "./components/ErrorFrequencyLineChart";
+import { HallucinationAnalysis } from "./components/HallucinationAnalysis";
+
 const AdditionalAnalytics = () => {
-  const [metrics, setMetrics] = useState<any>(null);
-  const [satisfactionData, setSatisfactionData] = useState<any[]>([]);
-  const [errorFrequencyData, setErrorFrequencyData] = useState<any[]>([]);
+  const [data, setData] = useState(null);
+
   const [selectedCampus, setSelectedCampus] = useState("all");
   const [selectedEducation, setSelectedEducation] = useState("all");
   const [selectedCategory, setSelectedCategory] = useState("all");
 
   useEffect(() => {
-    axios.get("http://localhost:5000/api/metrics").then((res) => {
-      setMetrics(res.data);
-      setSatisfactionData([
-        { name: "Очень удовлетворён", value: 70 },
-        { name: "Удовлетворён", value: 20 },
-        { name: "Не удовлетворён", value: 10 },
-      ]);
-      setErrorFrequencyData([
-        { date: "2025-03-01", errors: 5 },
-        { date: "2025-03-05", errors: 7 },
-        { date: "2025-03-10", errors: 6 },
-        { date: "2025-03-15", errors: 8 },
-        { date: "2025-03-20", errors: 5 },
-      ]);
-    });
-  }, []);
+    const fetchData = async () => {
+      try {
+        // Формируем объект с параметрами, как ожидает сервер
+        const params = {};
+        if (selectedCampus !== "all") params.campus = selectedCampus;
+        if (selectedEducation !== "all") params.education_level = selectedEducation;
+        if (selectedCategory !== "all") params.category_question = selectedCategory;
 
-  if (!metrics) return <Typography>Загрузка...</Typography>;
+        const response = await axios.get("http://localhost:5000/api/metrics", { params });
+        setData(response.data);
+      } catch (error) {
+        console.error("Ошибка при загрузке данных:", error);
+      }
+    };
 
-  const campusesDataRaw = Object.keys(metrics.campuses).map((key) => ({
-    name: key,
-    value: metrics.campuses[key],
-  }));
-  const educationDataRaw = Object.keys(metrics.educationLevels).map((key) => ({
-    name: key,
-    value: metrics.educationLevels[key],
-  }));
-  const questionCategoriesDataRaw = Object.keys(metrics.questionCategories).map((key) => ({
-    name: key,
-    value: metrics.questionCategories[key],
-  }));
+    fetchData();
+  }, [selectedCampus, selectedEducation, selectedCategory]);
 
-  const campusesData =
-    selectedCampus === "all"
-      ? campusesDataRaw
-      : campusesDataRaw.filter((item) => item.name === selectedCampus);
-  const educationData =
-    selectedEducation === "all"
-      ? educationDataRaw
-      : educationDataRaw.filter((item) => item.name === selectedEducation);
-  const questionCategoriesData =
-    selectedCategory === "all"
-      ? questionCategoriesDataRaw
-      : questionCategoriesDataRaw.filter((item) => item.name === selectedCategory);
+  if (!data) {
+    return <Typography>Загрузка...</Typography>;
+  }
+
+  // Преобразуем объекты в массивы, если они существуют
+  const campusesData = data.campuses
+    ? Object.keys(data.campuses).map((key) => ({ name: key, value: data.campuses[key] }))
+    : [];
+  const educationData = data.educationLevels
+    ? Object.keys(data.educationLevels).map((key) => ({ name: key, value: data.educationLevels[key] }))
+    : [];
+  const questionCategoriesData = data.questionCategories
+    ? Object.keys(data.questionCategories).map((key) => ({ name: key, value: data.questionCategories[key] }))
+    : [];
+
+  // Остальные данные
+  const satisfactionData = data.satisfactionData || [
+    { name: "Очень удовлетворён", value: 70 },
+    { name: "Удовлетворён", value: 20 },
+    { name: "Не удовлетворён", value: 10 },
+  ];
+  const errorFrequencyData = data.errorFrequencyData || [
+    { date: "2025-03-01", errors: 5 },
+    { date: "2025-03-05", errors: 7 },
+    { date: "2025-03-10", errors: 6 },
+    { date: "2025-03-15", errors: 8 },
+    { date: "2025-03-20", errors: 5 },
+  ];
 
   return (
     <Box sx={{ width: "100%", p: 3 }}>
       <Typography variant="h4" align="center" sx={{ mb: 3 }}>
         Аналитика данных
       </Typography>
+
       <FilterControls
-        campusesDataRaw={campusesDataRaw}
-        educationDataRaw={educationDataRaw}
-        questionCategoriesDataRaw={questionCategoriesDataRaw}
+        campusesDataRaw={campusesData}
+        educationDataRaw={educationData}
+        questionCategoriesDataRaw={questionCategoriesData}
         selectedCampus={selectedCampus}
         setSelectedCampus={setSelectedCampus}
         selectedEducation={selectedEducation}
@@ -77,6 +80,7 @@ const AdditionalAnalytics = () => {
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
       />
+
       <Grid container spacing={3}>
         <Grid item xs={12} md={4} sx={{ display: "flex" }}>
           <UnifiedBarChart
@@ -84,7 +88,7 @@ const AdditionalAnalytics = () => {
             data={campusesData}
             fillColor="#00E676"
             dataKey="value"
-            interactive={true}
+            interactive
           />
         </Grid>
         <Grid item xs={12} md={4} sx={{ display: "flex" }}>
@@ -93,7 +97,7 @@ const AdditionalAnalytics = () => {
             data={educationData}
             fillColor="#2979FF"
             dataKey="value"
-            interactive={true}
+            interactive
           />
         </Grid>
         <Grid item xs={12} md={4} sx={{ display: "flex" }}>
@@ -102,7 +106,7 @@ const AdditionalAnalytics = () => {
             data={questionCategoriesData}
             fillColor="#FF5252"
             dataKey="value"
-            interactive={true}
+            interactive
           />
         </Grid>
 
@@ -113,7 +117,7 @@ const AdditionalAnalytics = () => {
           <ErrorFrequencyLineChart data={errorFrequencyData} />
         </Grid>
         <Grid item xs={12}>
-          <HallucinationAnalysis metrics={metrics} />
+          <HallucinationAnalysis metrics={data} />
         </Grid>
       </Grid>
     </Box>

@@ -8,11 +8,14 @@ from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics.pairwise import cosine_similarity
 import pandas as pd
 import requests
+from func_to_call import parse_all_data, parse_data_with_time
+from collections import defaultdict
 
 
 app = Flask(__name__)
 CORS(app)
 
+<<<<<<< HEAD
 def filter_data(campus, education_level, category_question, parsed_data):
     """Фильтрует данные по переданным параметрам"""
     return [

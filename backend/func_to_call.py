@@ -22,7 +22,6 @@ def _parse_data(file_path: str, include_time: bool) -> List[Dict[str, Any]]:
     result = []
 
     start_time = datetime(2025, 3, 4, 8, 0)
-
     for item in data:
         parsed = {
             'selected_role': item['Выбранная роль'],
@@ -42,6 +41,7 @@ def _parse_data(file_path: str, include_time: bool) -> List[Dict[str, Any]]:
         parsed.update({"time": start_time.strftime("%d.%m.%Y %H:%M")})
         random_interval = timedelta(minutes=random.randint(1, 30))
         start_time += random_interval
+
 
         if item.get('Уточненный вопрос пользователя'):
             parsed.update({

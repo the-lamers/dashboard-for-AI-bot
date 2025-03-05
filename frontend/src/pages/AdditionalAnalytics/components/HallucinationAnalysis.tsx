@@ -21,6 +21,12 @@ import {
 } from "recharts";
 
 export const HallucinationAnalysis = ({ metrics }) => {
+  const hallucinationMetric = metrics.hallucinationMetric || {
+    currentValue: 0,
+    history: [],
+    details: []
+  };
+
   return (
     <Card>
       <CardContent>
@@ -28,10 +34,10 @@ export const HallucinationAnalysis = ({ metrics }) => {
           Анализ галлюцинаций модели
         </Typography>
         <Typography variant="body1" align="center" sx={{ mb: 2 }}>
-          Текущий уровень галлюцинаций: {(metrics.hallucinationMetric.currentValue * 100).toFixed(2)}%
+          Текущий уровень галлюцинаций: {(hallucinationMetric.currentValue * 100).toFixed(2)}%
         </Typography>
         <ResponsiveContainer width="100%" height={250}>
-          <LineChart data={metrics.hallucinationMetric.history}>
+          <LineChart data={hallucinationMetric.history}>
             <XAxis dataKey="date" stroke="#E0E0E0" />
             <YAxis stroke="#E0E0E0" domain={[0, 1]} />
             <Tooltip />
@@ -49,7 +55,7 @@ export const HallucinationAnalysis = ({ metrics }) => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {metrics.hallucinationMetric.details.map((detail, index) => (
+              {hallucinationMetric.details.map((detail, index) => (
                 <TableRow key={index}>
                   <TableCell>{detail.parameter}</TableCell>
                   <TableCell>{detail.value}</TableCell>
