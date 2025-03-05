@@ -3,7 +3,7 @@ import { Box, Grid, Typography } from "@mui/material";
 import axios from "axios";
 
 import UnifiedBarChart from "../../components/UnifiedBarChart";
-import { FilterControls } from "./components/FilterControls";
+import { FilterControls } from "./components/FilterControls/FilterControls";
 import { SatisfactionPieChart } from "./components/SatisfactionPieChart";
 import { ErrorFrequencyLineChart } from "./components/ErrorFrequencyLineChart";
 import { HallucinationAnalysis } from "./components/HallucinationAnalysis";

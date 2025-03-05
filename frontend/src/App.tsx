@@ -88,9 +88,9 @@ const App: React.FC = () => {
                 <Button color="inherit" component={Link} to="/performance">
                   Производительность
                 </Button>
-                <Button color="inherit" component={Link} to="/custom-metric">
+                {/* <Button color="inherit" component={Link} to="/custom-metric">
                   Доп. метрика
-                </Button>
+                </Button> */}
                 <Button
                   color="inherit"
                   component={Link}
@@ -125,9 +125,9 @@ const App: React.FC = () => {
               <ListItem button component={Link} to="/performance">
                 <ListItemText primary="Производительность" />
               </ListItem>
-              <ListItem button component={Link} to="/custom-metric">
+              {/* <ListItem button component={Link} to="/custom-metric">
                 <ListItemText primary="Доп. метрика" />
-              </ListItem>
+              </ListItem> */}
               <ListItem button component={Link} to="/hallucination-metric">
                 <ListItemText primary="Галлюцинации" />
               </ListItem>
@@ -159,7 +159,7 @@ const App: React.FC = () => {
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/chat-history" element={<ChatHistory />} />
                 <Route path="/performance" element={<PerformanceMetrics />} />
-                <Route path="/custom-metric" element={<CustomMetric />} />
+                {/* <Route path="/custom-metric" element={<CustomMetric />} /> */}
                 <Route
                   path="/hallucination-metric"
                   element={<HallucinationMetric />}

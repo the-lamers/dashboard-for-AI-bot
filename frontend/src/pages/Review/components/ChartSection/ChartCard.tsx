@@ -10,7 +10,7 @@ interface ChartCardProps {
 
 const ChartCard: React.FC<ChartCardProps> = ({ title, data, labels }) => {
   return (
-    <Card sx={{ backgroundColor: "#333", color: "#fff" }}>
+    <Card sx={{ backgroundColor: "#333", color: "#fff", height: "100%", }}>
       <CardContent sx={{ py: 1 }}>
         <Typography variant="h6" sx={{ fontWeight: "bold", mb: 0.25 }}>
           {title}
