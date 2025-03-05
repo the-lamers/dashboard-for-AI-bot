@@ -143,7 +143,7 @@ const App: React.FC = () => {
             pr: 7,
             pl: 7,
             width: "100vw",
-            height: "99vh",
+            // height: "99vh",
             display: "flex",
             flexDirection: "column",
           }}
